@@ -1,0 +1,36 @@
+# 环境变量和敏感信息
+.env
+.env.local
+*.key
+*.token
+*.secret
+
+# 个人配置覆盖（本地自定义配置）
+agents_config_local.json
+openclaw_local.json
+
+# 日志和临时文件
+*.log
+logs/
+tmp/
+temp/
+.DS_Store
+
+# IDE 和编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 依赖目录
+node_modules/
+
+# OpenClaw 运行时文件（不应包含在配置仓库中）
+.openclaw/sessions/
+.openclaw/cache/
+sessions/
+*.jsonl
+
+# 操作系统文件
+Thumbs.db

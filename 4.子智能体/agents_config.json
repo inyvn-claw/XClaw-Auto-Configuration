@@ -1,0 +1,64 @@
+"list": [
+      {
+        "id": "main",
+        "default": true,
+        "name": "Main",
+        "workspace": "/home/jnuaipr/.openclaw/workspace"
+      },
+      {
+        "id": "researcher",
+        "name": "文献调研",
+        "workspace": "/home/jnuaipr/.openclaw/workspace-researcher",
+        "agentDir": "/home/jnuaipr/.openclaw/agents/researcher/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "idea",
+        "name": "创意生成",
+        "workspace": "/home/jnuaipr/.openclaw/workspace-idea",
+        "agentDir": "/home/jnuaipr/.openclaw/agents/idea/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "mentor",
+        "name": "导师审核",
+        "workspace": "/home/jnuaipr/.openclaw/workspace-mentor",
+        "agentDir": "/home/jnuaipr/.openclaw/agents/mentor/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "architect",
+        "name": "架构设计",
+        "workspace": "/home/jnuaipr/.openclaw/workspace-architect",
+        "agentDir": "/home/jnuaipr/.openclaw/agents/architect/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "coder",
+        "name": "实验 coder",
+        "workspace": "/home/jnuaipr/.openclaw/workspace-coder",
+        "agentDir": "/home/jnuaipr/.openclaw/agents/coder/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "writer",
+        "name": "论文撰写",
+        "workspace": "/home/jnuaipr/.openclaw/workspace-writer",
+        "agentDir": "/home/jnuaipr/.openclaw/agents/writer/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "reviewer",
+        "name": "论文审稿",
+        "workspace": "/home/jnuaipr/.openclaw/workspace-reviewer",
+        "agentDir": "/home/jnuaipr/.openclaw/agents/reviewer/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "coordinator",
+        "name": "科研主管",
+        "workspace": "/home/jnuaipr/.openclaw/workspace-coordinator",
+        "agentDir": "/home/jnuaipr/.openclaw/agents/coordinator/agent",
+        "model": "kimi-coding/k2p5"
+      }
+    ]

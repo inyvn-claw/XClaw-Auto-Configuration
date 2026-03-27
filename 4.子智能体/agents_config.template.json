@@ -1,0 +1,69 @@
+{
+  "_comment": "这是 OpenClaw 子智能体配置模板。请复制此文件为 agents_config.json 并替换 {{HOME}} 为你的实际 home 目录路径",
+  "agents": {
+    "list": [
+      {
+        "id": "main",
+        "default": true,
+        "name": "Main",
+        "workspace": "{{HOME}}/.openclaw/workspace"
+      },
+      {
+        "id": "researcher",
+        "name": "文献调研",
+        "workspace": "{{HOME}}/.openclaw/workspace-researcher",
+        "agentDir": "{{HOME}}/.openclaw/agents/researcher/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "idea",
+        "name": "创意生成",
+        "workspace": "{{HOME}}/.openclaw/workspace-idea",
+        "agentDir": "{{HOME}}/.openclaw/agents/idea/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "mentor",
+        "name": "导师审核",
+        "workspace": "{{HOME}}/.openclaw/workspace-mentor",
+        "agentDir": "{{HOME}}/.openclaw/agents/mentor/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "architect",
+        "name": "架构设计",
+        "workspace": "{{HOME}}/.openclaw/workspace-architect",
+        "agentDir": "{{HOME}}/.openclaw/agents/architect/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "coder",
+        "name": "实验 coder",
+        "workspace": "{{HOME}}/.openclaw/workspace-coder",
+        "agentDir": "{{HOME}}/.openclaw/agents/coder/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "writer",
+        "name": "论文撰写",
+        "workspace": "{{HOME}}/.openclaw/workspace-writer",
+        "agentDir": "{{HOME}}/.openclaw/agents/writer/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "reviewer",
+        "name": "论文审稿",
+        "workspace": "{{HOME}}/.openclaw/workspace-reviewer",
+        "agentDir": "{{HOME}}/.openclaw/agents/reviewer/agent",
+        "model": "kimi-coding/k2p5"
+      },
+      {
+        "id": "coordinator",
+        "name": "科研主管",
+        "workspace": "{{HOME}}/.openclaw/workspace-coordinator",
+        "agentDir": "{{HOME}}/.openclaw/agents/coordinator/agent",
+        "model": "kimi-coding/k2p5"
+      }
+    ]
+  }
+}
