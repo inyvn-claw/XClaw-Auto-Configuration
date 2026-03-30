@@ -78,6 +78,213 @@ install_skill() {
     fi
 }
 
+# ═══════════════════════════════════════════════════════════════
+# 检测和卸载已有 OpenClaw
+# ═══════════════════════════════════════════════════════════════
+check_and_uninstall_openclaw() {
+    echo ""
+    echo -e "${CYAN}🔍 检测现有 OpenClaw 安装${NC}"
+    echo ""
+    
+    local OPENCLAW_EXISTS=false
+    local OPENCLAW_VERSION=""
+    local CONFIG_EXISTS=false
+    local CONFIG_SIZE=""
+    
+    # 检测 openclaw 命令
+    if command -v openclaw &> /dev/null; then
+        OPENCLAW_EXISTS=true
+        OPENCLAW_VERSION=$(openclaw --version 2>&1 | head -1 || echo "未知版本")
+    fi
+    
+    # 检测配置文件
+    if [ -d "$HOME/.openclaw" ]; then
+        CONFIG_EXISTS=true
+        CONFIG_SIZE=$(du -sh "$HOME/.openclaw" 2>/dev/null | cut -f1 || echo "未知")
+    fi
+    
+    # 如果都不存在，直接返回
+    if [ "$OPENCLAW_EXISTS" = false ] && [ "$CONFIG_EXISTS" = false ]; then
+        echo -e "${GREEN}✓${NC} 未检测到现有 OpenClaw 安装，可以全新安装"
+        return 0
+    fi
+    
+    # 显示警告信息
+    echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${RED}║                    ⚠️  检测到现有安装                        ║${NC}"
+    echo -e "${RED}╠══════════════════════════════════════════════════════════════╣${NC}"
+    
+    if [ "$OPENCLAW_EXISTS" = true ]; then
+        echo -e "${RED}║  OpenClaw 已安装: $OPENCLAW_VERSION${NC}"
+    fi
+    
+    if [ "$CONFIG_EXISTS" = true ]; then
+        echo -e "${RED}║  配置目录: ~/.openclaw (${CONFIG_SIZE})${NC}"
+        echo -e "${RED}║  包含: 插件、技能、工作区、API密钥等配置${NC}"
+    fi
+    
+    echo -e "${RED}╠══════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${RED}║  ⚠️  继续安装将覆盖/删除现有配置！                          ║${NC}"
+    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    # 询问用户选择
+    echo "请选择操作："
+    echo ""
+    echo -e "  ${YELLOW}1${NC}) ${GREEN}备份现有配置${NC}，然后卸载并全新安装（推荐）"
+    echo -e "  ${YELLOW}2${NC}) ${RED}直接卸载${NC}，不备份（⚠️ 数据将永久丢失）"
+    echo -e "  ${YELLOW}3${NC}) ${CYAN}保留现有安装${NC}，仅更新配置和技能"
+    echo -e "  ${YELLOW}4${NC}) ${BLUE}退出脚本${NC}，手动处理"
+    echo ""
+    read -p "请输入选项 [1-4]: " choice
+    
+    case $choice in
+        1)
+            backup_and_uninstall
+            ;;
+        2)
+            direct_uninstall
+            ;;
+        3)
+            echo ""
+            echo -e "${YELLOW}⚠ 将保留现有 OpenClaw 安装，仅更新配置和技能${NC}"
+            read -p "按 Enter 继续..."
+            return 0
+            ;;
+        4)
+            echo ""
+            echo -e "${CYAN}已退出。您可以：${NC}"
+            echo "  1. 手动备份: cp -r ~/.openclaw ~/.openclaw.backup"
+            echo "  2. 手动卸载: ./uninstall_claw.sh"
+            echo "  3. 迁移指南: https://docs.openclaw.ai/zh-CN/install/migrating"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}无效选项，退出脚本${NC}"
+            exit 1
+            ;;
+    esac
+}
+
+# 备份并卸载
+backup_and_uninstall() {
+    echo ""
+    echo -e "${BLUE}📦 备份现有配置...${NC}"
+    
+    # 创建备份目录
+    BACKUP_DIR="$HOME/.openclaw.backup.$(date +%Y%m%d_%H%M%S)"
+    
+    if [ -d "$HOME/.openclaw" ]; then
+        echo "  复制 ~/.openclaw 到备份目录..."
+        cp -r "$HOME/.openclaw" "$BACKUP_DIR"
+        echo -e "${GREEN}✓${NC} 配置已备份到: ${CYAN}$BACKUP_DIR${NC}"
+        
+        # 显示备份内容
+        echo ""
+        echo "备份内容包括："
+        du -sh "$BACKUP_DIR" 2>/dev/null || true
+        echo ""
+        
+        # 询问是否查看备份详情
+        read -p "是否查看备份目录结构? [y/N]: " view_backup
+        if [[ "$view_backup" =~ ^[Yy]$ ]]; then
+            echo ""
+            ls -la "$BACKUP_DIR" | head -20
+            echo ""
+        fi
+    fi
+    
+    # 执行卸载
+    echo ""
+    echo -e "${BLUE}🗑️  执行卸载...${NC}"
+    
+    # 使用项目中的卸载脚本
+    if [ -f "$SCRIPT_DIR/1. 卸载旧版本和安装指定版本XClaw/uninstall_claw.sh" ]; then
+        bash "$SCRIPT_DIR/1. 卸载旧版本和安装指定版本XClaw/uninstall_claw.sh"
+    else
+        # 内置卸载逻辑（简化版）
+        builtin_uninstall
+    fi
+    
+    echo ""
+    echo -e "${GREEN}✓${NC} 卸载完成"
+    echo -e "${CYAN}备份位置: $BACKUP_DIR${NC}"
+    echo ""
+    read -p "按 Enter 继续安装..."
+}
+
+# 直接卸载（不备份）
+direct_uninstall() {
+    echo ""
+    echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${RED}║              ⚠️  警告：此操作不可恢复！                      ║${NC}"
+    echo -e "${RED}║                                                              ║${NC}"
+    echo -e "${RED}║  所有配置、插件、技能、工作区将被永久删除！                  ║${NC}"
+    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    read -p "请输入 'DELETE' 确认继续: " confirm
+    
+    if [ "$confirm" != "DELETE" ]; then
+        echo -e "${YELLOW}操作已取消${NC}"
+        exit 1
+    fi
+    
+    echo ""
+    echo -e "${BLUE}🗑️  执行卸载...${NC}"
+    
+    # 使用项目中的卸载脚本
+    if [ -f "$SCRIPT_DIR/1. 卸载旧版本和安装指定版本XClaw/uninstall_claw.sh" ]; then
+        bash "$SCRIPT_DIR/1. 卸载旧版本和安装指定版本XClaw/uninstall_claw.sh"
+    else
+        builtin_uninstall
+    fi
+    
+    echo ""
+    echo -e "${GREEN}✓${NC} 卸载完成"
+    echo ""
+    read -p "按 Enter 继续安装..."
+}
+
+# 内置卸载逻辑（当找不到卸载脚本时使用）
+builtin_uninstall() {
+    # 停止 Gateway
+    if command -v openclaw &> /dev/null; then
+        openclaw gateway stop 2>/dev/null || true
+        sleep 1
+    fi
+    
+    # 杀死残留进程
+    killall -q openclaw-gateway 2>/dev/null || true
+    pkill -f "openclaw" 2>/dev/null || true
+    sleep 1
+    
+    # 卸载 npm 包
+    npm uninstall -g openclaw 2>/dev/null || true
+    
+    # 删除二进制文件
+    rm -f "$(which openclaw 2>/dev/null)" 2>/dev/null || true
+    rm -f /usr/local/bin/openclaw 2>/dev/null || true
+    
+    # 删除配置（可选，会询问）
+    if [ -d "$HOME/.openclaw" ]; then
+        echo ""
+        read -p "删除配置目录 ~/.openclaw? [y/N]: " del_config
+        if [[ "$del_config" =~ ^[Yy]$ ]]; then
+            rm -rf "$HOME/.openclaw"
+            echo -e "${GREEN}✓${NC} 配置已删除"
+        else
+            echo -e "${YELLOW}保留配置目录${NC}"
+        fi
+    fi
+    
+    # 清理缓存
+    rm -rf "$HOME/.npm/_npx" 2>/dev/null || true
+    rm -rf /tmp/openclaw* 2>/dev/null || true
+}
+
+# 执行检测和卸载
+check_and_uninstall_openclaw
+
 # 步骤 0：环境检查
 echo ""
 echo -e "${CYAN}🔍 环境检查${NC}"
@@ -111,16 +318,6 @@ else
     exit 1
 fi
 
-# 检查 OpenClaw
-if command -v openclaw &> /dev/null; then
-    OPENCLAW_VERSION=$(openclaw --version 2>&1 | head -1)
-    echo -e "${GREEN}✓${NC} OpenClaw 已安装: $OPENCLAW_VERSION"
-    OPENCLAW_INSTALLED=true
-else
-    echo -e "${YELLOW}⚠${NC} OpenClaw 未安装"
-    OPENCLAW_INSTALLED=false
-fi
-
 # 检查 clawhub
 if command -v clawhub &> /dev/null; then
     echo -e "${GREEN}✓${NC} clawhub 已安装"
@@ -137,37 +334,24 @@ echo ""
 # ═══════════════════════════════════════════════════════════════
 step_title 1 "安装 OpenClaw"
 
-if [ "$OPENCLAW_INSTALLED" = true ]; then
-    echo -e "${GREEN}✓${NC} OpenClaw 已安装，跳过此步骤"
-    echo ""
-    read -p "是否要重新安装/更新到指定版本 2026.3.13? [y/N]: " reinstall
-    if [[ "$reinstall" =~ ^[Yy]$ ]]; then
-        OPENCLAW_INSTALLED=false
-    fi
-fi
+echo "将执行以下操作："
+echo "  1. 安装 OpenClaw 2026.3.13"
+echo "  2. 运行 onboard 初始化"
+echo ""
 
-if [ "$OPENCLAW_INSTALLED" = false ]; then
-    echo "将执行以下操作："
-    echo "  1. 安装 OpenClaw 2026.3.13"
-    echo "  2. 运行 onboard 初始化"
-    echo ""
+if confirm_continue; then
+    echo -e "${BLUE}正在安装 OpenClaw...${NC}"
+    npm install -g openclaw@2026.3.13
     
-    if confirm_continue; then
-        echo -e "${BLUE}正在安装 OpenClaw...${NC}"
-        npm install -g openclaw@2026.3.13
-        
-        echo ""
-        echo -e "${BLUE}初始化 OpenClaw...${NC}"
-        echo -e "${YELLOW}请按照提示完成初始化配置${NC}"
-        openclaw onboard --install-daemon
-        
-        echo ""
-        echo -e "${GREEN}✓${NC} OpenClaw 安装完成"
-    else
-        echo -e "${YELLOW}跳过 OpenClaw 安装${NC}"
-    fi
+    echo ""
+    echo -e "${BLUE}初始化 OpenClaw...${NC}"
+    echo -e "${YELLOW}请按照提示完成初始化配置${NC}"
+    openclaw onboard --install-daemon
+    
+    echo ""
+    echo -e "${GREEN}✓${NC} OpenClaw 安装完成"
 else
-    echo -e "${GREEN}✓${NC} 使用现有 OpenClaw 安装"
+    echo -e "${YELLOW}跳过 OpenClaw 安装${NC}"
 fi
 
 # ═══════════════════════════════════════════════════════════════
@@ -214,13 +398,6 @@ if confirm_continue; then
     # 检查并创建 .openclaw 目录
     if [ ! -d "$HOME/.openclaw" ]; then
         mkdir -p "$HOME/.openclaw"
-    fi
-    
-    # 备份现有配置
-    if [ -f "$HOME/.openclaw/openclaw.json" ]; then
-        BACKUP_FILE="$HOME/.openclaw/openclaw.json.backup.$(date +%Y%m%d_%H%M%S)"
-        cp "$HOME/.openclaw/openclaw.json" "$BACKUP_FILE"
-        echo -e "${YELLOW}已备份现有配置到: $BACKUP_FILE${NC}"
     fi
     
     # 复制子智能体工作区
@@ -332,7 +509,7 @@ if confirm_continue; then
     
     for skill in "${CLAWHUB_SKILLS[@]}"; do
         install_skill "$skill" "$CLAWHUB_CMD"
-        sleep 0.5  # 避免触发速率限制
+        sleep 0.5
     done
     
     echo ""
@@ -343,233 +520,20 @@ else
     echo -e "${YELLOW}跳过技能安装${NC}"
 fi
 
-# ═══════════════════════════════════════════════════════════════
-# 步骤 5：配置 API Key
-# ═══════════════════════════════════════════════════════════════
-step_title 5 "配置 API Key（可选但推荐）"
-
-echo -e "${CYAN}以下 API Key 用于扩展功能，您可以选择性配置：${NC}"
-echo ""
-
-# Maton API Key
-print_line
-echo -e "${CYAN}1. Maton API Gateway${NC}"
-echo "   用途: 发送邮件、连接 Google/Microsoft/Notion/Slack 等 100+ 服务"
-echo "   获取: https://maton.ai/settings"
-echo ""
-read -p "是否配置 Maton API Key? [y/N]: " config_maton
-if [[ "$config_maton" =~ ^[Yy]$ ]]; then
-    read -s -p "请输入 Maton API Key: " MATON_API_KEY
-    echo ""
-    
-    # 添加到 shell 配置
-    if [ -f "$HOME/.bashrc" ]; then
-        # 删除旧配置
-        sed -i '/MATON_API_KEY/d' "$HOME/.bashrc"
-        echo "" >> "$HOME/.bashrc"
-        echo "# Maton API Gateway" >> "$HOME/.bashrc"
-        echo "export MATON_API_KEY=\"$MATON_API_KEY\"" >> "$HOME/.bashrc"
-    fi
-    
-    if [ -f "$HOME/.zshrc" ]; then
-        sed -i '/MATON_API_KEY/d' "$HOME/.zshrc"
-        echo "" >> "$HOME/.zshrc"
-        echo "# Maton API Gateway" >> "$HOME/.zshrc"
-        echo "export MATON_API_KEY=\"$MATON_API_KEY\"" >> "$HOME/.zshrc"
-    fi
-    
-    # 添加到 OpenClaw 配置
-    if [ -f "$HOME/.openclaw/openclaw.json" ]; then
-        # 创建临时文件更新 JSON
-        python3 <> PYCODE
-import json
-import sys
-
-with open('$HOME/.openclaw/openclaw.json', 'r') as f:
-    config = json.load(f)
-
-if 'env' not in config:
-    config['env'] = {}
-config['env']['MATON_API_KEY'] = '$MATON_API_KEY'
-
-with open('$HOME/.openclaw/openclaw.json', 'w') as f:
-    json.dump(config, f, indent=2)
-
-print("已更新 openclaw.json")
-PYCODE
-    fi
-    
-    echo -e "${GREEN}✓${NC} Maton API Key 已配置"
-    echo "  已添加到 ~/.bashrc 和 ~/.zshrc"
-    echo "  已添加到 OpenClaw 配置"
-fi
-
-# Tavily API Key
-print_line
-echo ""
-echo -e "${CYAN}2. Tavily API (AI 搜索)${NC}"
-echo "   用途: 高质量的 AI 网络搜索"
-echo "   获取: https://app.tavily.com/"
-echo ""
-read -p "是否配置 Tavily API Key? [y/N]: " config_tavily
-if [[ "$config_tavily" =~ ^[Yy]$ ]]; then
-    read -s -p "请输入 Tavily API Key: " TAVILY_API_KEY
-    echo ""
-    
-    # 创建 .env 文件
-    if [ ! -f "$HOME/.openclaw/.env" ]; then
-        touch "$HOME/.openclaw/.env"
-    fi
-    
-    # 删除旧配置
-    sed -i '/TAVILY_API_KEY/d' "$HOME/.openclaw/.env"
-    echo "TAVILY_API_KEY=$TAVILY_API_KEY" >> "$HOME/.openclaw/.env"
-    
-    echo -e "${GREEN}✓${NC} Tavily API Key 已配置"
-    echo "  已添加到 ~/.openclaw/.env"
-fi
-
-# GitHub Token
-print_line
-echo ""
-echo -e "${CYAN}3. GitHub Token${NC}"
-echo "   用途: 管理 GitHub 仓库、Issue、PR"
-echo "   获取: https://github.com/settings/tokens"
-echo ""
-read -p "是否配置 GitHub Token? [y/N]: " config_github
-if [[ "$config_github" =~ ^[Yy]$ ]]; then
-    read -s -p "请输入 GitHub Token: " GITHUB_TOKEN
-    echo ""
-    read -p "请输入 GitHub 用户名: " GITHUB_USERNAME
-    
-    # 添加到 shell 配置
-    if [ -f "$HOME/.bashrc" ]; then
-        sed -i '/GITHUB_TOKEN/d' "$HOME/.bashrc"
-        sed -i '/GITHUB_USERNAME/d' "$HOME/.bashrc"
-        echo "" >> "$HOME/.bashrc"
-        echo "# GitHub" >> "$HOME/.bashrc"
-        echo "export GITHUB_TOKEN=\"$GITHUB_TOKEN\"" >> "$HOME/.bashrc"
-        echo "export GITHUB_USERNAME=\"$GITHUB_USERNAME\"" >> "$HOME/.bashrc"
-    fi
-    
-    if [ -f "$HOME/.zshrc" ]; then
-        sed -i '/GITHUB_TOKEN/d' "$HOME/.zshrc"
-        sed -i '/GITHUB_USERNAME/d' "$HOME/.zshrc"
-        echo "" >> "$HOME/.zshrc"
-        echo "# GitHub" >> "$HOME/.zshrc"
-        echo "export GITHUB_TOKEN=\"$GITHUB_TOKEN\"" >> "$HOME/.zshrc"
-        echo "export GITHUB_USERNAME=\"$GITHUB_USERNAME\"" >> "$HOME/.zshrc"
-    fi
-    
-    echo -e "${GREEN}✓${NC} GitHub Token 已配置"
-    echo "  已添加到 ~/.bashrc 和 ~/.zshrc"
-fi
-
-# ═══════════════════════════════════════════════════════════════
-# 步骤 6：重启并验证
-# ═══════════════════════════════════════════════════════════════
-step_title 6 "重启服务并验证"
-
-echo "即将重启 OpenClaw 服务以应用所有配置..."
-echo ""
-
-if confirm_continue; then
-    echo -e "${BLUE}重启 OpenClaw...${NC}"
-    openclaw gateway restart
-    
-    echo ""
-    echo "等待服务启动..."
-    sleep 3
-    
-    echo ""
-    echo -e "${BLUE}验证安装...${NC}"
-    echo ""
-    
-    # 检查版本
-    echo "OpenClaw 版本:"
-    openclaw --version 2>&1 | head -1 || true
-    echo ""
-    
-    # 检查已安装技能
-    echo "已安装技能（ClawHub）:"
-    clawhub list 2>&1 || echo "  无法获取技能列表"
-    echo ""
-    
-    # 检查子智能体
-    echo "子智能体配置:"
-    if [ -f "$HOME/.openclaw/agents_config.json" ]; then
-        grep -o '"id": "[^"]*"' "$HOME/.openclaw/agents_config.json" | sed 's/"id": "//;s/"$//' | sed 's/^/  - /'
-    fi
-    echo ""
-    
-    echo -e "${GREEN}✓${NC} 验证完成"
-else
-    echo -e "${YELLOW}跳过重启${NC}"
-fi
-
-# ═══════════════════════════════════════════════════════════════
-# 完成总结
-# ═══════════════════════════════════════════════════════════════
 echo ""
 print_line
 echo -e "${GREEN}🎉 XClaw 配置完成！${NC}"
 print_line
 echo ""
 
-cat << 'EOF'
-╔══════════════════════════════════════════════════════════════╗
-║                         下一步操作                           ║
-╠══════════════════════════════════════════════════════════════╣
-║                                                              ║
-║  1. 重新加载 Shell 配置:                                     ║
-║     source ~/.bashrc  (或 source ~/.zshrc)                   ║
-║                                                              ║
-║  2. 检查 OpenClaw 状态:                                      ║
-║     openclaw status                                          ║
-║                                                              ║
-║  3. 测试子智能体:                                            ║
-║     发送消息: "启动 coordinator 帮我规划论文写作"            ║
-║                                                              ║
-║  4. 查看完整文档:                                            ║
-║     cat README.md                                            ║
-║                                                              ║
-║  5. 探索技能列表:                                            ║
-║     clawhub list                                             ║
-║     ls ~/.openclaw/skills/                                   ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
-EOF
+echo -e "${CYAN}下一步操作：${NC}"
+echo "1. 重新加载 Shell 配置: source ~/.bashrc (或 ~/.zshrc)"
+echo "2. 检查 OpenClaw 状态: openclaw status"
+echo "3. 查看完整文档: cat README.md"
 
-echo ""
-echo -e "${CYAN}已配置的子智能体：${NC}"
-echo "  researcher   - 文献调研员（文献检索、知识提取）"
-echo "  idea         - 创意生成器（创新点挖掘）"
-echo "  mentor       - 导师审核员（方案评估）"
-echo "  architect    - 架构设计师（系统设计）"
-echo "  coder        - 实验工程师（代码实现）"
-echo "  writer       - 论文撰写员（学术写作）"
-echo "  reviewer     - 论文审稿人（质量检查）"
-echo "  coordinator  - 科研主管（整体协调）"
-echo ""
-
-if [ -n "$MATON_API_KEY" ]; then
-    echo -e "${GREEN}✓${NC} Maton API Gateway 已配置，可以发送邮件"
-fi
-if [ -n "$TAVILY_API_KEY" ]; then
-    echo -e "${GREEN}✓${NC} Tavily 搜索已配置"
-fi
-if [ -n "$GITHUB_TOKEN" ]; then
-    echo -e "${GREEN}✓${NC} GitHub 集成已配置"
+if [ -d "$BACKUP_DIR" ]; then
+    echo ""
+    echo -e "${CYAN}备份位置: $BACKUP_DIR${NC}"
 fi
 
-echo ""
-echo -e "${YELLOW}提示：如果子智能体未正常工作，请检查：${NC}"
-echo "  1. 是否已将 agents 配置合并到 ~/.openclaw/openclaw.json"
-echo "  2. 运行: openclaw gateway restart"
-echo "  3. 查看日志: openclaw logs --follow"
-echo ""
-
-print_line
-echo -e "${CYAN}感谢使用 XClaw 配置脚本！${NC}"
-print_line
 echo ""
